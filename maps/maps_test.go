@@ -1,6 +1,8 @@
 package maps_and_tests
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestSearch(t *testing.T) {
 
@@ -26,21 +28,81 @@ func TestSearch(t *testing.T) {
 
 func TestAddingWords(t *testing.T) {
 
-	dictionary := Dictionary{"test": "this is just a test"}
-
 	t.Run("add a new word", func(t *testing.T) {
-		dictionary.Add("test2", "another test")
+		dictionary := Dictionary{}
+		word := "test"
+		definition := "another test"
 
-		got, error := dictionary.Search("test2")
-		want := "another test"
+		err := dictionary.Add(word, definition)
 
-		if error != nil {
-			t.Fatal("didn't expect to get an error")
-		}
-
-		assertStrings(t, got, want)
+		assertError(t, err, nil)
+		assertDefinition(t, dictionary, word, definition)
 	})
 
+	t.Run("add an existing word", func(t *testing.T) {
+		word := "test"
+		definition := "definition"
+		dictionary := Dictionary{word: definition}
+		err := dictionary.Add(word, "a new definition")
+
+		assertError(t, err, ErrWordExists)
+		assertDefinition(t, dictionary, word, definition)
+	})
+
+}
+
+func TestUpdatingWords(t *testing.T) {
+
+	t.Run("update definition of existing word", func(t *testing.T) {
+		word := "test"
+		definition := "definition"
+		dictionary := Dictionary{word: definition}
+		updatedDefinition := "newly updated definition"
+
+		dictionary.Update(word, updatedDefinition)
+		assertDefinition(t, dictionary, word, updatedDefinition)
+	})
+
+	t.Run("update definition of new word", func(t *testing.T) {
+		dictionary := Dictionary{}
+
+		err := dictionary.Update("test", "definition")
+
+		assertError(t, err, ErrWordDoesNotExist)
+	})
+
+}
+
+func TestDeleteWords(t *testing.T) {
+
+	t.Run("delete existing word", func(t *testing.T) {
+		word := "test"
+		definition := "definition"
+		dictionary := Dictionary{word: definition}
+
+		dictionary.Delete(word)
+
+		_, err := dictionary.Search(word)
+
+		if err == nil {
+			t.Fatal("expected to get an error")
+		}
+
+		assertError(t, err, ErrNotFound)
+	})
+
+}
+
+func assertDefinition(t testing.TB, dictionary Dictionary, word, definition string) {
+	t.Helper()
+
+	got, error := dictionary.Search(word)
+
+	if error != nil {
+		t.Fatal("didn't expect to get an error")
+	}
+
+	assertStrings(t, got, definition)
 }
 
 func assertStrings(t testing.TB, got, want string) {
